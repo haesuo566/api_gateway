@@ -1,7 +1,14 @@
 package entity
 
+const (
+	GOOGLE = iota
+	NAVER
+	KAKAO
+)
+
 type User struct {
-	id string
+	Id       string
+	Platform int
 }
 
 func (u *User) Method() {

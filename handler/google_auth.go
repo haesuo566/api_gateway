@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/novel/auth/config"
 	"github.com/novel/auth/middleware"
 	"github.com/novel/auth/usecase"
 	"golang.org/x/oauth2"
@@ -17,17 +18,22 @@ type googleAuthHandler struct {
 
 // .env file 로 뺌
 var googleConfig = oauth2.Config{
-	ClientID:     "1014459614066-945esdhcqevf8u9une9i0b7bvofsihld.apps.googleusercontent.com",
-	ClientSecret: "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",
+	ClientID:     config.Getenv("GOOGLE_ID"),
+	ClientSecret: config.Getenv("GOOGLE_SECRET"),
 	RedirectURL:  "http://localhost:12121/auth/google/callback",
 	Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email"},
 	Endpoint:     google.Endpoint,
 }
 
+var instance *googleAuthHandler = nil
+
 func NewGoogleAuthHandler() *googleAuthHandler {
-	return &googleAuthHandler{
-		googleAuthUsecase: usecase.NewGoogleAuthUsecase(),
+	if instance == nil {
+		instance = &googleAuthHandler{
+			googleAuthUsecase: usecase.NewGoogleAuthUsecase(),
+		}
 	}
+	return instance
 }
 
 func (g *googleAuthHandler) Signin(ctx *middleware.Ctx) {
@@ -57,5 +63,13 @@ func (g *googleAuthHandler) Callback(ctx *middleware.Ctx) {
 		return
 	}
 
-	g.googleAuthUsecase.GetUserInfo(token)
+	user, err := g.googleAuthUsecase.GetUserInfo(token)
+	if err != nil {
+		log.Println(err)
+		http.Redirect(ctx.W, ctx.R, "/", http.StatusBadRequest)
+		return
+	}
+
+	// jwt token return
+	log.Println(user)
 }
