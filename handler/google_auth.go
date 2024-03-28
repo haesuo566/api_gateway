@@ -5,53 +5,57 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/novel/auth/ancho"
+	"github.com/novel/auth/middleware"
+	"github.com/novel/auth/usecase"
 	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 )
 
 type googleAuthHandler struct {
+	googleAuthUsecase usecase.IGoogleAuthUsecase
 }
 
 // .env file 로 뺌
 var googleConfig = oauth2.Config{
 	ClientID:     "1014459614066-945esdhcqevf8u9une9i0b7bvofsihld.apps.googleusercontent.com",
 	ClientSecret: "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",
-	RedirectURL:  "http://localhost:8080/auth/google/callback",
+	RedirectURL:  "http://localhost:12121/auth/google/callback",
 	Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email"},
-	Endpoint: oauth2.Endpoint{
-		AuthURL:  "https://accounts.google.com/o/oauth2/auth",
-		TokenURL: "https://oauth2.googleapis.com/token",
-	},
+	Endpoint:     google.Endpoint,
 }
 
-// usecase 까지는 나눠야 하는데...
 func NewGoogleAuthHandler() *googleAuthHandler {
-	return &googleAuthHandler{}
+	return &googleAuthHandler{
+		googleAuthUsecase: usecase.NewGoogleAuthUsecase(),
+	}
 }
 
-func (g *googleAuthHandler) Signin(ctx *ancho.Ctx) {
+func (g *googleAuthHandler) Signin(ctx *middleware.Ctx) {
 	state := generateState(ctx.W)                  // csrf token
 	redirectUrl := googleConfig.AuthCodeURL(state) // login redirect url -> ex) https://google.auth?state="asdasd"&code="asd"
 	http.Redirect(ctx.W, ctx.R, redirectUrl, http.StatusTemporaryRedirect)
 }
 
-func (g *googleAuthHandler) Callback(ctx *ancho.Ctx) {
+func (g *googleAuthHandler) Callback(ctx *middleware.Ctx) {
 	state, err := ctx.R.Cookie("state")
 	if err != nil {
+		log.Println(err)
 		http.Redirect(ctx.W, ctx.R, "/", http.StatusBadRequest)
 		return
 	}
 
-	if ctx.R.URL.Query().Get("state") != state.Value {
+	if ctx.R.FormValue("state") != state.Value {
 		http.Redirect(ctx.W, ctx.R, "/", http.StatusBadRequest)
 		return
 	}
 
-	token, err := googleConfig.Exchange(context.Background(), ctx.R.URL.Query().Get("code"))
+	code := ctx.R.FormValue("code")
+	token, err := googleConfig.Exchange(context.Background(), code)
 	if err != nil {
+		log.Println(err)
 		http.Redirect(ctx.W, ctx.R, "/", http.StatusBadRequest)
 		return
 	}
 
-	log.Println(token)
+	g.googleAuthUsecase.GetUserInfo(token)
 }

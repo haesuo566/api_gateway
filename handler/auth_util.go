@@ -16,7 +16,7 @@ func generateState(w http.ResponseWriter) string {
 	rand.Read(b)
 	state := base64.URLEncoding.EncodeToString(b)
 
-	cookie := &http.Cookie{Name: "state", Value: state, Expires: expiration, HttpOnly: true}
+	cookie := &http.Cookie{Name: "state", Value: state, Expires: expiration}
 	http.SetCookie(w, cookie)
 	return state
 }
