@@ -57,8 +57,5 @@ func (g *GoogleAuthUsecase) GetUserInfo(token *oauth2.Token) (*entity.User, erro
 		return nil, err
 	}
 
-	return &entity.User{
-		Id:       user.Email,
-		Platform: entity.GOOGLE,
-	}, nil
+	return nil, nil
 }

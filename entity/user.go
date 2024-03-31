@@ -4,11 +4,11 @@ const (
 	GOOGLE = iota
 	NAVER
 	KAKAO
+	NOVEL
 )
 
 type User struct {
-	Id       string
-	Platform int
+	Name string
 }
 
 func (u *User) Method() {

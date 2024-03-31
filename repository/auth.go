@@ -6,7 +6,7 @@ import (
 )
 
 type AuthRepository struct {
-	sql sql.ISqlUtil
+	SqlUtil sql.ISqlUtil
 }
 
 var instance IAuthRepository = nil
@@ -14,13 +14,23 @@ var instance IAuthRepository = nil
 func NewAuthRepository() IAuthRepository {
 	if instance == nil {
 		instance = &AuthRepository{
-			sql: sql.New(),
+			SqlUtil: sql.New(),
 		}
 	}
 	return instance
 }
 
 func (a *AuthRepository) FindById(id string) (*entity.User, error) {
+	rows, err := a.SqlUtil.Query("SELECT * FROM user WHERE id = ?", id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
-	return nil, nil
+	user := &entity.User{}
+	for rows.Next() {
+		// rows.Scan(user.Id, user.Platform, user.A)
+	}
+
+	return user, nil
 }
