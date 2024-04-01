@@ -1,5 +1,7 @@
 package entity
 
+import "time"
+
 const (
 	GOOGLE = iota
 	NAVER
@@ -8,9 +10,13 @@ const (
 )
 
 type User struct {
-	Name string
-}
-
-func (u *User) Method() {
-
+	Id                int       `json:"id"`
+	Name              string    `json:"name"`
+	Email             string    `json:"email"`
+	Credential        string    `json:"credential"`
+	OauthAccessToken  string    `json:"oauth_access_token"`
+	OauthRefreshToken string    `json:"oauth_refresh_token"`
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
+	Provider          int       `json:"provider"`
 }
