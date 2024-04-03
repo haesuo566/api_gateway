@@ -72,4 +72,5 @@ func (g *googleAuthHandler) Callback(ctx *middleware.Ctx) {
 
 	// jwt token return
 	log.Println(user)
+	return
 }

@@ -12,3 +12,11 @@ func NewAuthHandler() *AuthHandler {
 func (a *AuthHandler) Signin(ctx *middleware.Ctx) {
 	ctx.W.Write([]byte("HelloWorld"))
 }
+
+func (a *AuthHandler) Signout(ctx *middleware.Ctx) {
+
+}
+
+func (a *AuthHandler) Signup(ctx *middleware.Ctx) {
+
+}

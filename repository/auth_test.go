@@ -2,6 +2,8 @@ package repository
 
 import (
 	"testing"
+
+	"github.com/novel/auth/entity"
 )
 
 func TestFindById(t *testing.T) {
@@ -15,5 +17,18 @@ func TestFindById(t *testing.T) {
 
 		t.Log(user.Email)
 	})
+}
 
+func TestSave(t *testing.T) {
+	repo := NewAuthRepository()
+
+	user := &entity.User{
+		Name:       "김옥지",
+		Email:      "김옥지@naver.com",
+		Credential: "김옥지@@@",
+		Provider:   1,
+	}
+	if err := repo.Save(user); err != nil {
+		t.Fatal(err)
+	}
 }

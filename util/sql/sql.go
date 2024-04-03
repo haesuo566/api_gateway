@@ -51,18 +51,20 @@ func (s *SqlUtil) Query(query string, param ...interface{}) (*sql.Rows, error) {
 	// if !rows.NextResultSet() {
 	// 	return nil, nil
 	// }
+	log.Println(query)
 
 	return rows, nil
 }
 
-func (s *SqlUtil) Exec(query string, param ...interface{}) (*sql.Result, error) {
-	result, err := s.db.Exec(query)
+func (s *SqlUtil) Exec(query string, param ...interface{}) (sql.Result, error) {
+	result, err := s.db.Exec(query, param...)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
+	log.Println(query)
 
-	return &result, nil
+	return result, nil
 }
 
 // func (s *SqlUtil) QueryWithTranscation() {
