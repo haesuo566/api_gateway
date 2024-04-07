@@ -67,6 +67,25 @@ func (s *SqlUtil) Exec(query string, param ...interface{}) (sql.Result, error) {
 	return result, nil
 }
 
-// func (s *SqlUtil) QueryWithTranscation() {
+// query, exec를 variadic argument로 받아할 듯
+func (s *SqlUtil) ExecWithTransaction(transaction Transaction) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
 
-// }
+	if err := transaction(tx); err != nil {
+		tx.Rollback()
+		log.Println(err)
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		tx.Rollback()
+		log.Println(err)
+		return err
+	}
+
+	return nil
+}

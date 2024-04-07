@@ -9,7 +9,7 @@ import (
 func TestFindById(t *testing.T) {
 	repo := NewAuthRepository()
 	t.Run("execute query from user table", func(t *testing.T) {
-		testId := "hso@trinitysoft.co.kr"
+		testId := "hso@titysoft.co.kr"
 		user, err := repo.FindById(testId)
 		if err != nil {
 			t.Fatal(err)
@@ -28,7 +28,7 @@ func TestSave(t *testing.T) {
 		Credential: "김옥지@@@",
 		Provider:   1,
 	}
-	if err := repo.Save(user); err != nil {
+	if _, err := repo.Save(user); err != nil {
 		t.Fatal(err)
 	}
 }

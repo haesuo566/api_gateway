@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 
@@ -21,7 +22,7 @@ var googleConfig = oauth2.Config{
 	ClientID:     config.Getenv("GOOGLE_ID"),
 	ClientSecret: config.Getenv("GOOGLE_SECRET"),
 	RedirectURL:  "http://localhost:12121/auth/google/callback",
-	Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email"},
+	Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"},
 	Endpoint:     google.Endpoint,
 }
 
@@ -70,7 +71,19 @@ func (g *googleAuthHandler) Callback(ctx *middleware.Ctx) {
 		return
 	}
 
-	// jwt token return
-	log.Println(user)
-	return
+	jwtToken, err := g.googleAuthUsecase.CreateUserToken(user)
+	if err != nil {
+		log.Println(err)
+		http.Redirect(ctx.W, ctx.R, "/", http.StatusBadRequest)
+		return
+	}
+
+	response, err := json.Marshal(jwtToken)
+	if err != nil {
+		log.Println(err)
+		http.Redirect(ctx.W, ctx.R, "/", http.StatusBadRequest)
+		return
+	}
+
+	ctx.W.Write(response)
 }
