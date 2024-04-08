@@ -5,7 +5,9 @@ import "database/sql"
 type ISqlUtil interface {
 	Query(query string, param ...interface{}) (*sql.Rows, error)
 	Exec(query string, param ...interface{}) (sql.Result, error)
-	ExecWithTransaction(transaction Transaction) error
+	QueryWithTransaction(transaction transactionWithResult) (interface{}, error)
+	ExecWithTransaction(transaction transaction) error
 }
 
-type Transaction func(*sql.Tx) error
+type transactionWithResult func(*sql.Tx) (interface{}, error)
+type transaction func(*sql.Tx) error

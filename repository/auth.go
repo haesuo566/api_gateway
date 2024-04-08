@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"errors"
 	"log"
 
 	"github.com/novel/auth/entity"
@@ -39,63 +40,52 @@ func (a *AuthRepository) FindById(email string) (*entity.User, error) {
 
 	user := entity.User{}
 	for rows.Next() {
-		rows.Scan(&user.Id, &user.Name, &user.Email, &user.Credential, &user.AccessToken,
-			&user.RefreshToken, &user.CreatedAt, &user.UpdatedAt, &user.Provider)
+		rows.Scan(&user.Id, &user.Name, &user.Email, user.Credential, user.AccessToken,
+			user.RefreshToken, &user.CreatedAt, &user.UpdatedAt, &user.Provider)
 	}
 
 	return &user, nil
 }
 
-// 이 메서드를 select하고 있다면?? 업데이트를 때릴까??
-// 근데 그렇게 하려면 transaction으로 해야하는데...
 func (a *AuthRepository) Save(user *entity.User) (*entity.User, error) {
 	var query string
 	var param []any
-	if user.Credential == "" { // oauth user
+	if user.Credential == nil { // oauth user
 		query = "INSERT INTO user (name, email, oauth_access_token, oauth_refresh_token, provider) VALUES (?, ?, ?, ?, ?);"
-		param = []any{user.Name, user.Email, user.AccessToken, user.RefreshToken, user.Provider}
+		param = []any{user.Name, user.Email, *user.AccessToken, *user.RefreshToken, user.Provider}
 	} else { // normal user
 		query = "INSERT INTO user (name, email, credential, provider) VALUES (?, ?, ?, ?);"
-		param = []any{user.Name, user.Email, user.Credential, user.Provider}
+		param = []any{user.Name, user.Email, *user.Credential, user.Provider}
 	}
 
 	// ---------------- 여기부터 transaction 으로 시작해야함 ----------------
-	a.SqlUtil.ExecWithTransaction(func(tx *sql.Tx) error {
+	data, err := a.SqlUtil.QueryWithTransaction(func(tx *sql.Tx) (interface{}, error) {
 		result, err := tx.Exec(query, param...)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		// insert가 적용되지 않음
 		id, err := result.LastInsertId()
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		user := &entity.User{}
-		tx.QueryRow("SELECT id, name, email, credential, oauth_access_token, oauth_refresh_token,"+
+		row := tx.QueryRow("SELECT id, name, email, credential, oauth_access_token, oauth_refresh_token,"+
 			"created_at, updated_at, provider FROM user WHERE id = ?", id).Scan(&user.Id, &user.Name, &user.Email,
 			&user.Credential, &user.AccessToken, &user.RefreshToken, &user.CreatedAt, &user.UpdatedAt, &user.Provider)
+		if row != nil {
+			return nil, errors.New(row.Error())
+		}
 
-		return nil
+		return user, nil
 	})
 
-	result, err := a.SqlUtil.Exec(query, param...)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
 
-	if _, err := result.RowsAffected(); err != nil {
-		log.Println(err)
-		return nil, err
-	}
-
-	findUser, err := a.FindById(user.Email)
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-
-	return findUser, nil
+	return data.(*entity.User), nil
 }

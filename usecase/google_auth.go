@@ -61,30 +61,17 @@ func (g *GoogleAuthUsecase) GetUserInfo(token *oauth2.Token) (*entity.User, erro
 	user := &entity.User{
 		Name:         gUser.Name,
 		Email:        gUser.Email,
-		AccessToken:  token.AccessToken,
-		RefreshToken: token.RefreshToken,
+		AccessToken:  &token.AccessToken,
+		RefreshToken: &token.RefreshToken,
 		Provider:     entity.GOOGLE,
 	}
 
-	// g.sqlUtil.ExecWithTransaction(func(tx *db.Tx) error {
-	// 	if findUser, err := g.googleAuthRepository.FindById(user.Email); err != nil {
-	// 		return err
-	// 	} else if findUser == nil {
-	// 		// 등록하는 process 추가 -> 저장하고 바로 조회하는데 이게 안됨
-	// 		// 아마 걸리는게 있음 그래서 이걸 트랜잭션으로 처리를 해야해서 sqlUtil에 ExecWithTranscation 추가해야함
-	// 		if findUser, err = g.googleAuthRepository.Save(user); err != nil {
-	// 			return err
-	// 		} else {
-	// 			user = findUser
-	// 		}
-	// 	} else {
-	// 		user = findUser
-	// 	}
+	findUser, err := g.googleAuthRepository.Save(user)
+	if err != nil {
+		return nil, err
+	}
 
-	// 	return nil
-	// })
-
-	return user, nil
+	return findUser, nil
 }
 
 func (g *GoogleAuthUsecase) CreateUserToken(user *entity.User) (*jwt.ResposneToken, error) {

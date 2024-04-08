@@ -23,7 +23,7 @@ func New() ISqlUtil {
 		user := config.Getenv("DB_USER")
 		pass := config.Getenv("DB_PASS")
 
-		db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/auth", user, pass, host, port))
+		db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/auth?parseTime=True", user, pass, host, port))
 		if err != nil {
 			log.Println(err)
 			return nil
@@ -67,8 +67,30 @@ func (s *SqlUtil) Exec(query string, param ...interface{}) (sql.Result, error) {
 	return result, nil
 }
 
-// query, exec를 variadic argument로 받아할 듯
-func (s *SqlUtil) ExecWithTransaction(transaction Transaction) error {
+func (s *SqlUtil) QueryWithTransaction(transaction transactionWithResult) (interface{}, error) {
+	tx, err := s.db.Begin()
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	result, err := transaction(tx)
+	if err != nil {
+		tx.Rollback()
+		log.Println(err)
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		tx.Rollback()
+		log.Println(err)
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (s *SqlUtil) ExecWithTransaction(transaction transaction) error {
 	tx, err := s.db.Begin()
 	if err != nil {
 		log.Println(err)

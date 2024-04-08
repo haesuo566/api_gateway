@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/novel/auth/entity"
@@ -22,13 +23,21 @@ func TestFindById(t *testing.T) {
 func TestSave(t *testing.T) {
 	repo := NewAuthRepository()
 
-	user := &entity.User{
-		Name:       "김옥지",
-		Email:      "김옥지@naver.com",
-		Credential: "김옥지@@@",
-		Provider:   1,
+	access := "asddaadsasdasds"
+	refresh := "asddaadsasdasasd"
+
+	testUser := &entity.User{
+		Name:         "김a아",
+		Email:        "haoaaa1@trinitysoft.co.kr",
+		AccessToken:  &access,
+		RefreshToken: &refresh,
+		Provider:     1,
 	}
-	if _, err := repo.Save(user); err != nil {
-		t.Fatal(err)
+
+	user, err := repo.Save(testUser)
+	if err != nil {
+		t.Error(err)
 	}
+
+	fmt.Println(*user)
 }

@@ -8,7 +8,7 @@ import (
 )
 
 func Getenv(key string) string {
-	if err := godotenv.Load(".env"); err != nil {
+	if err := godotenv.Load("../.env"); err != nil {
 		log.Println(err)
 		return ""
 	}
