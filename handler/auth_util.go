@@ -8,7 +8,7 @@ import (
 )
 
 // csrf token
-func generateState(w http.ResponseWriter) string {
+func GenerateState(w http.ResponseWriter) string {
 	// 하루
 	expiration := time.Now().Add(1 * 24 * time.Hour)
 

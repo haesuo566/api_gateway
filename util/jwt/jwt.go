@@ -34,7 +34,7 @@ func (j *JwtUtil) GenerateAccessToken(email string) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claim)
-	return token.SignedString(secret)
+	return token.SignedString([]byte(secret))
 }
 
 func (j *JwtUtil) GenerateRefreshToken() (string, error) {
@@ -45,7 +45,7 @@ func (j *JwtUtil) GenerateRefreshToken() (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claim)
-	return token.SignedString(secret)
+	return token.SignedString([]byte(secret))
 }
 
 func (j *JwtUtil) ValidateToken(token string) error {

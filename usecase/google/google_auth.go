@@ -1,4 +1,4 @@
-package usecase
+package google
 
 import (
 	"encoding/json"
@@ -9,6 +9,7 @@ import (
 
 	"github.com/novel/auth/entity"
 	"github.com/novel/auth/repository"
+	"github.com/novel/auth/usecase"
 	"github.com/novel/auth/util/jwt"
 	"github.com/novel/auth/util/sql"
 	"golang.org/x/oauth2"
@@ -20,9 +21,20 @@ type GoogleAuthUsecase struct {
 	sqlUtil              sql.ISqlUtil
 }
 
-var instance IGoogleAuthUsecase = nil
+type googleUserInfo struct {
+	Id            string `json:"id"`
+	Email         string `json:"email"`
+	VerifiedEmail bool   `json:"verified_email"`
+	Name          string `json:"name"`
+	GivenName     string `json:"given_name"`
+	FamilyName    string `json:"family_name"`
+	Picture       string `json:"picture"`
+	Locale        string `json:"locale"`
+}
 
-func NewGoogleAuthUsecase() IGoogleAuthUsecase {
+var instance usecase.IAuthUsecase = nil
+
+func New() usecase.IAuthUsecase {
 	if instance == nil {
 		instance = &GoogleAuthUsecase{
 			googleAuthRepository: repository.NewAuthRepository(),
@@ -74,8 +86,8 @@ func (g *GoogleAuthUsecase) GetUserInfo(token *oauth2.Token) (*entity.User, erro
 	return findUser, nil
 }
 
-func (g *GoogleAuthUsecase) CreateUserToken(user *entity.User) (*jwt.ResposneToken, error) {
-	responseToken := &jwt.ResposneToken{}
+func (g *GoogleAuthUsecase) CreateUserToken(user *entity.User) (*jwt.ResponseToken, error) {
+	responseToken := &jwt.ResponseToken{}
 
 	if accessToken, err := jwt.New().GenerateAccessToken(user.Email); err != nil {
 		log.Println(err)
