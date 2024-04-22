@@ -14,6 +14,7 @@ the bestest clean architecture
 2. CreateUserToken, GenerateCsrfToken 메서드 분리 어디다가 할지
 3. database index, constraint, view(이거는 거의 알아서 뭐...), table lock(이거 중요 격리수준과 연관깊음) 찾아서 학습
 4. golang 문법 틈틈히
+5. sqlc generate 하면 나오는 go 파일 참고해서 db util? 같은거 만들면 될 듯
 */
 
 func init() {

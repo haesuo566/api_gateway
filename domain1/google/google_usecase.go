@@ -6,16 +6,17 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/novel/auth/entity"
+	"github.com/novel/auth/entity/user"
+	"github.com/novel/auth/global/common/entity"
 	"golang.org/x/oauth2"
 )
 
 type IGoogleUsecase interface {
-	GetUserInfo(token *oauth2.Token) (*entity.User, error)
+	GetUserInfo(*oauth2.Token) (*user.User, error)
 }
 
 type GoogleUsecase struct {
-	repository IGoogleRepository
+	userRepository user.IUserRepository
 }
 
 type googleUserInfo struct {
@@ -31,16 +32,17 @@ type googleUserInfo struct {
 
 var usecaseInstance IGoogleUsecase = nil
 
-func NewUsecase(repository IGoogleRepository) IGoogleUsecase {
+func NewUsecase(userRepository user.IUserRepository) IGoogleUsecase {
 	if usecaseInstance == nil {
 		usecaseInstance = &GoogleUsecase{
-			repository: repository,
+			userRepository: userRepository,
 		}
 	}
 	return usecaseInstance
 }
 
-func (g *GoogleUsecase) GetUserInfo(token *oauth2.Token) (*entity.User, error) {
+// 로그인하면 updated_at column 업데이트 하는 부분 추가
+func (g *GoogleUsecase) GetUserInfo(token *oauth2.Token) (*user.User, error) {
 	// User Information Url
 	url := fmt.Sprintf("https://www.googleapis.com/oauth2/v2/userinfo?access_token=%s", token.AccessToken)
 
@@ -61,7 +63,7 @@ func (g *GoogleUsecase) GetUserInfo(token *oauth2.Token) (*entity.User, error) {
 		return nil, err
 	}
 
-	user := &entity.User{
+	user := &user.User{
 		Name:         googleUserInfo.Name,
 		Email:        googleUserInfo.Email,
 		AccessToken:  &token.AccessToken,
@@ -69,11 +71,11 @@ func (g *GoogleUsecase) GetUserInfo(token *oauth2.Token) (*entity.User, error) {
 		Provider:     entity.GOOGLE,
 	}
 
-	findUser, err := g.repository.FindById(user.Email)
+	findUser, err := g.userRepository.FindByEmail(user.Email)
 	if err != nil {
 		return nil, err
 	} else if findUser == nil {
-		if findUser, err = g.repository.Save(user); err != nil {
+		if findUser, err = g.userRepository.Save(user); err != nil {
 			return nil, err
 		}
 	}

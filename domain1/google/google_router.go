@@ -1,11 +1,16 @@
 package google
 
-import "github.com/labstack/echo/v4"
+import (
+	"github.com/labstack/echo/v4"
+	"github.com/novel/auth/db"
+	"github.com/novel/auth/entity/user"
+)
 
 func SetRouter(e *echo.Echo) {
 	// dependency injection
-	repository := NewRepository()
-	usecase := NewUsecase(repository)
+	db := db.New()
+	userRepository := user.NewRepository(db)
+	usecase := NewUsecase(userRepository)
 	handler := NewHandler(usecase)
 
 	group := e.Group("/google")
