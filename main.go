@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/novel/auth/router"
 )
@@ -16,13 +15,6 @@ the bestest clean architecture
 4. golang 문법 틈틈히
 5. sqlc generate 하면 나오는 go 파일 참고해서 db util? 같은거 만들면 될 듯
 */
-
-func init() {
-	err := godotenv.Load(".env")
-	if err != nil {
-		panic(err)
-	}
-}
 
 // '/' 경로는 Api Gateway 추가예정
 func main() {
