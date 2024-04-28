@@ -3,12 +3,14 @@ package user
 import (
 	"bytes"
 	"context"
+	"database/sql"
+	"fmt"
 
 	"github.com/novel/auth/db"
 )
 
 type IUserRepository interface {
-	FindByEmail(string) (*User, error)
+	FindByEmail(string, db.ITx) (*User, error)
 	Update(*User) (*User, error)
 	Save(*User) (*User, error)
 }
@@ -28,68 +30,86 @@ func NewRepository(db db.IDatabase) IUserRepository {
 	return instance
 }
 
-func (u *UserRepository) FindByEmail(email string) (*User, error) {
+func (u *UserRepository) FindByEmail(email string, tx db.ITx) (*User, error) {
 	query := `SELECT id, name, email, credential, oauth_access_token, oauth_refresh_token, created_at, updated_at, provider 
 	FROM user WHERE email = ?`
-	row := u.db.QueryRowContext(context.Background(), query, email)
-	if err := row.Err(); err != nil {
+	var row *sql.Row
+	if tx == nil {
+		row = u.db.QueryRowContext(context.Background(), query, email)
+	} else {
+		row = tx.QueryRowContext(context.Background(), query, email)
+	}
+
+	if err := row.Err(); err != nil { // 이거 에러처리가 애매하다
 		return nil, err
 	}
 
 	user := User{}
-	row.Scan(&user.Id, &user.Name, &user.Email, &user.Credential, &user.AccessToken,
-		&user.RefreshToken, &user.CreatedAt, &user.UpdatedAt, &user.Provider)
+	if err := row.Scan(&user.Id, &user.Name, &user.Email, &user.Credential, &user.AccessToken,
+		&user.RefreshToken, &user.CreatedAt, &user.UpdatedAt, &user.Provider); err != nil {
+		return nil, err
+	}
+
 	return &user, nil
 }
 
-// 아직 다 못함
-// bytebuffer에 string 추가하는 부분 해야함
 func (u *UserRepository) Update(user *User) (*User, error) {
-	// 변경되는 컬럼 부분을 bytebuffer가?? 이걸로 붙여서 만들어
-	// user select 해가지고 비교해서 변경 안된거만
-	db.WithTx(u.db, func(tx db.ITx) (interface{}, error) {
+	_, err := db.WithTx(u.db, func(tx db.ITx) (interface{}, error) {
 		selectQuery := `SELECT name, oauth_access_token, oauth_refresh_token, updated_at FROM user WHERE email = ?`
 		row := tx.QueryRowContext(context.Background(), selectQuery, user.Email)
 		if err := row.Err(); err != nil {
-			if err := tx.Rollback(); err != nil {
-				return nil, err
-			}
 			return nil, err
 		}
 
-		u := User{}
-		if err := row.Scan(&u.Name, &u.AccessToken, &u.RefreshToken, &u.UpdatedAt); err != nil {
-			if err := tx.Rollback(); err != nil {
-				return nil, err
-			}
+		origUser := User{}
+		if err := row.Scan(&origUser.Name, &origUser.AccessToken, &origUser.RefreshToken, &origUser.UpdatedAt); err != nil {
 			return nil, err
 		}
 
-		var params []interface{} = make([]interface{}, 1, 4)
+		// var columnName []string = []string{"name", "updated_at"}
+		// var originUser []interface{} = []interface{}{origUser.Name, origUser.UpdatedAt}
+		// var newUser []interface{} = []interface{}{user.Name, user.UpdatedAt}
+		var params []interface{} = make([]interface{}, 0, 4)
 		var buffer bytes.Buffer
 		buffer.WriteString("UPDATE user SET ")
-		if u.Name != user.Name {
-			buffer.WriteString("name = ?")
-			params = append(params, u.Name)
-		}
-		if *u.AccessToken != *user.AccessToken {
-			buffer.WriteString(", oauth_access_token = ?")
-			params = append(params, *u.AccessToken)
-		}
-		if *u.RefreshToken != *user.RefreshToken {
-			buffer.WriteString(", oauth_refresh_token = ?")
-		}
-		if u.UpdatedAt != user.UpdatedAt {
-			buffer.WriteString(", oauth_refresh_token = ?")
+		var b bool = false
+
+		combineQuery := func(columnName string, first interface{}, second interface{}, param interface{}) {
+			if first != second {
+				if b {
+					buffer.WriteString(", ")
+				}
+
+				buffer.WriteString(fmt.Sprintf("%s = ?", columnName))
+				params = append(params, param)
+				b = true
+			}
 		}
 
-		buffer.WriteString("WEHRE email = ?")
-		params = append(params, u.Email)
+		combineQuery("name", origUser.Name, user.Name, user.Name)
+		combineQuery("updated_at", origUser.UpdatedAt, user.UpdatedAt, "NOW()")
+
+		buffer.WriteString(" WHERE email = ?")
 		updateQuery := buffer.String()
-		tx.ExecContext(context.Background(), updateQuery, params...)
-		return nil, nil
+		params = append(params, user.Email)
+		_, err := tx.ExecContext(context.Background(), updateQuery, params...)
+		if err != nil {
+			return nil, err
+		}
+
+		findUser, err := u.FindByEmail(user.Email, tx)
+		if err != nil {
+			return nil, err
+		}
+
+		return findUser, nil
 	})
-	return nil, nil
+
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }
 
 func (u *UserRepository) Save(user *User) (*User, error) {
@@ -106,35 +126,19 @@ func (u *UserRepository) Save(user *User) (*User, error) {
 	newUser, err := db.WithTx(u.db, func(tx db.ITx) (interface{}, error) {
 		result, err := tx.ExecContext(context.Background(), query, params...)
 		if err != nil {
-			if err := tx.Rollback(); err != nil {
-				return nil, err
-			}
 			return nil, err
 		}
 
-		id, err := result.LastInsertId()
+		if _, err := result.LastInsertId(); err != nil {
+			return nil, err
+		}
+
+		newUser, err := u.FindByEmail(user.Email, tx)
 		if err != nil {
 			return nil, err
 		}
 
-		selectQuery := `SELECT id, name, email, credential, oauth_access_token, oauth_refresh_token, provider FROM user WHERE id = ?`
-		row := tx.QueryRowContext(context.Background(), selectQuery, id)
-		if err := row.Err(); err != nil {
-			if err := tx.Rollback(); err != nil {
-				return nil, err
-			}
-			return nil, err
-		}
-
-		iUser := User{}
-		if err := row.Scan(&iUser.Id, &iUser.Name, &iUser.Email, &iUser.Credential, &iUser.AccessToken, &iUser.RefreshToken, &iUser.Provider); err != nil {
-			if err := tx.Rollback(); err != nil {
-				return nil, err
-			}
-			return nil, err
-		}
-
-		return &iUser, nil
+		return newUser, nil
 	})
 
 	if err != nil {
