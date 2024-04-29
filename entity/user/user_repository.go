@@ -4,14 +4,13 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
-	"fmt"
 
 	"github.com/novel/auth/db"
 )
 
 type IUserRepository interface {
 	FindByEmail(string, db.ITx) (*User, error)
-	Update(*User) (*User, error)
+	Update(*User, db.ITx) (*User, error)
 	Save(*User) (*User, error)
 }
 
@@ -53,8 +52,8 @@ func (u *UserRepository) FindByEmail(email string, tx db.ITx) (*User, error) {
 	return &user, nil
 }
 
-func (u *UserRepository) Update(user *User) (*User, error) {
-	_, err := db.WithTx(u.db, func(tx db.ITx) (interface{}, error) {
+func (u *UserRepository) Update(user *User, tx db.ITx) (*User, error) {
+	updateFunc := func(tx db.ITx) (interface{}, error) {
 		selectQuery := `SELECT name, oauth_access_token, oauth_refresh_token, updated_at FROM user WHERE email = ?`
 		row := tx.QueryRowContext(context.Background(), selectQuery, user.Email)
 		if err := row.Err(); err != nil {
@@ -66,28 +65,24 @@ func (u *UserRepository) Update(user *User) (*User, error) {
 			return nil, err
 		}
 
-		// var columnName []string = []string{"name", "updated_at"}
-		// var originUser []interface{} = []interface{}{origUser.Name, origUser.UpdatedAt}
-		// var newUser []interface{} = []interface{}{user.Name, user.UpdatedAt}
-		var params []interface{} = make([]interface{}, 0, 4)
+		var params []interface{} = make([]interface{}, 0, 3)
 		var buffer bytes.Buffer
-		buffer.WriteString("UPDATE user SET ")
-		var b bool = false
+		buffer.WriteString("UPDATE user SET updated_at = CURRENT_TIMESTAMP")
 
-		combineQuery := func(columnName string, first interface{}, second interface{}, param interface{}) {
-			if first != second {
-				if b {
-					buffer.WriteString(", ")
-				}
-
-				buffer.WriteString(fmt.Sprintf("%s = ?", columnName))
-				params = append(params, param)
-				b = true
-			}
+		if origUser.Name != user.Name {
+			buffer.WriteString(", name = ?")
+			params = append(params, user.Name)
 		}
 
-		combineQuery("name", origUser.Name, user.Name, user.Name)
-		combineQuery("updated_at", origUser.UpdatedAt, user.UpdatedAt, "NOW()")
+		if user.AccessToken != nil && *origUser.AccessToken != *user.AccessToken {
+			buffer.WriteString(", oauth_access_token = ?")
+			params = append(params, *user.AccessToken)
+		}
+
+		if user.RefreshToken != nil && *origUser.RefreshToken != *user.RefreshToken {
+			buffer.WriteString(", oauth_refresh_token = ?")
+			params = append(params, *user.RefreshToken)
+		}
 
 		buffer.WriteString(" WHERE email = ?")
 		updateQuery := buffer.String()
@@ -103,13 +98,21 @@ func (u *UserRepository) Update(user *User) (*User, error) {
 		}
 
 		return findUser, nil
-	})
+	}
+
+	var userInfo interface{}
+	var err error
+	if tx != nil {
+		userInfo, err = updateFunc(tx)
+	} else {
+		userInfo, err = db.WithTx(u.db, updateFunc)
+	}
 
 	if err != nil {
 		return nil, err
 	}
 
-	return user, nil
+	return userInfo.(*User), nil
 }
 
 func (u *UserRepository) Save(user *User) (*User, error) {
@@ -124,21 +127,27 @@ func (u *UserRepository) Save(user *User) (*User, error) {
 	}
 
 	newUser, err := db.WithTx(u.db, func(tx db.ITx) (interface{}, error) {
-		result, err := tx.ExecContext(context.Background(), query, params...)
-		if err != nil {
-			return nil, err
+		var userInfo *User
+		if _, err := u.FindByEmail(user.Email, tx); err != nil {
+			result, err := tx.ExecContext(context.Background(), query, params...)
+			if err != nil {
+				return nil, err
+			}
+
+			if _, err := result.LastInsertId(); err != nil {
+				return nil, err
+			}
+
+			if userInfo, err = u.FindByEmail(user.Email, tx); err != nil {
+				return nil, err
+			}
+		} else {
+			if userInfo, err = u.Update(user, tx); err != nil {
+				return nil, err
+			}
 		}
 
-		if _, err := result.LastInsertId(); err != nil {
-			return nil, err
-		}
-
-		newUser, err := u.FindByEmail(user.Email, tx)
-		if err != nil {
-			return nil, err
-		}
-
-		return newUser, nil
+		return userInfo, nil
 	})
 
 	if err != nil {

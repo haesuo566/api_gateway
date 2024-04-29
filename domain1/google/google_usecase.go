@@ -73,16 +73,10 @@ func (g *GoogleUsecase) GetUserInfo(token *oauth2.Token) (*user.User, error) {
 		Provider:     entity.GOOGLE,
 	}
 
-	findUser, err := g.userRepository.FindByEmail(user.Email, nil)
+	saveUser, err := g.userRepository.Save(user)
 	if err != nil {
-		if findUser, err = g.userRepository.Save(user); err != nil {
-			return nil, err
-		}
-	} else {
-		if _, err := g.userRepository.Update(user); err != nil {
-			return nil, err
-		}
+		return nil, err
 	}
 
-	return findUser, nil
+	return saveUser, nil
 }

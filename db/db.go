@@ -15,8 +15,6 @@ type ITx interface {
 	PrepareContext(context.Context, string) (*sql.Stmt, error)
 	QueryContext(context.Context, string, ...interface{}) (*sql.Rows, error)
 	QueryRowContext(context.Context, string, ...interface{}) *sql.Row
-	Rollback() error
-	// Commit() error
 }
 
 type IDatabase interface {

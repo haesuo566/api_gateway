@@ -36,7 +36,7 @@ func TestUpdate(t *testing.T) {
 		UpdatedAt: time.Now().Local(),
 	}
 
-	if _, err := repository.Update(user); err != nil {
+	if _, err := repository.Update(user, nil); err != nil {
 		t.Error(err)
 	}
 }
