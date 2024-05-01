@@ -1,6 +1,8 @@
 package main
 
 import (
+	"net/http"
+
 	"github.com/labstack/echo/v4"
 	"github.com/novel/auth/router"
 )
@@ -22,13 +24,19 @@ the bestest clean architecture
 func main() {
 	e := echo.New()
 
-	// e.Use()
-	// e.Use()
-	// e.Use()
+	e.HTTPErrorHandler = func(err error, c echo.Context) {
+		e.Logger.Error(err)
+		c.JSON(http.StatusInternalServerError, "Internal Server Error")
+	}
+
+	e.Use(
+	// middleware.Logger(),
+	// middleware.Recover(),
+	)
 
 	router.SetRouter(e)
 
-	e.Logger.Fatal(e.Start(":1323"))
+	e.Logger.Fatal(e.Start(":12121"))
 	// e.Group("/asd", )
 	// app := middleware.New()
 

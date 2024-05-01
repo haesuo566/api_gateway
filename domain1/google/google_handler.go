@@ -4,12 +4,15 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/labstack/echo/v4"
-	"github.com/novel/auth/global/config"
+	"github.com/novel/auth/config"
+	"github.com/novel/auth/util/jwt"
 	"golang.org/x/oauth2"
 )
 
@@ -17,15 +20,20 @@ type GoogleHandler struct {
 	usecase IGoogleUsecase
 }
 
-var googleConfig = oauth2.Config{
-	ClientID:     config.Getenv("GOOGLE_ID"),
-	ClientSecret: config.Getenv("GOOGLE_SECRET"),
-	RedirectURL:  "http://localhost:12121/auth/google/callback",
-	Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"},
-	Endpoint: oauth2.Endpoint{
-		AuthURL:  "https://accounts.google.com/o/oauth2/auth",
-		TokenURL: "https://oauth2.googleapis.com/token",
-	},
+var googleConfig oauth2.Config
+
+func init() {
+	config.LoadEnv()
+	googleConfig = oauth2.Config{
+		ClientID:     os.Getenv("GOOGLE_ID"),
+		ClientSecret: os.Getenv("GOOGLE_SECRET"),
+		RedirectURL:  "http://localhost:12121/google/callback",
+		Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"},
+		Endpoint: oauth2.Endpoint{
+			AuthURL:  "https://accounts.google.com/o/oauth2/auth",
+			TokenURL: "https://oauth2.googleapis.com/token",
+		},
+	}
 }
 
 var handlerInstance *GoogleHandler = nil
@@ -42,7 +50,10 @@ func NewHandler(usecase IGoogleUsecase) *GoogleHandler {
 func (g *GoogleHandler) Login(c echo.Context) error {
 	state := GenerateToken(c)
 	url := googleConfig.AuthCodeURL(state)
-	c.Redirect(http.StatusTemporaryRedirect, url)
+	if err := c.Redirect(http.StatusTemporaryRedirect, url); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -71,22 +82,18 @@ func (g *GoogleHandler) Callback(c echo.Context) error {
 		return err
 	}
 
-	// jwtToken, err := g.googleUsecase.CreateUserToken(user)
-	// if err != nil {
-	// 	log.Println(err)
-	// 	http.Redirect(ctx.W, ctx.R, "/", http.StatusBadRequest)
-	// 	return
-	// }
+	responseToken, err := jwt.GenerateResponseToken(user)
+	if err != nil {
+		return err
+	}
 
-	// response, err := json.Marshal(jwtToken)
-	// if err != nil {
-	// 	log.Println(err)
-	// 	http.Redirect(ctx.W, ctx.R, "/", http.StatusBadRequest)
-	// 	return
-	// }
+	data, err := json.Marshal(responseToken)
+	if err != nil {
+		c.Redirect(http.StatusBadRequest, "/")
+		return err
+	}
 
-	// ctx.W.Header().Set("Content-Type", "application/json")
-	// ctx.W.Write(response)
+	c.JSON(http.StatusOK, data)
 	return nil
 }
 

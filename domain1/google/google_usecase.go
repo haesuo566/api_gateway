@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/novel/auth/entity/user"
-	"github.com/novel/auth/global/common/entity"
 	"golang.org/x/oauth2"
 )
 
@@ -70,7 +69,7 @@ func (g *GoogleUsecase) GetUserInfo(token *oauth2.Token) (*user.User, error) {
 		AccessToken:  &token.AccessToken,
 		RefreshToken: &token.RefreshToken,
 		UpdatedAt:    time.Now(),
-		Provider:     entity.GOOGLE,
+		Provider:     0,
 	}
 
 	saveUser, err := g.userRepository.Save(user)

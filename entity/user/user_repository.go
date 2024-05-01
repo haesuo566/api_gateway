@@ -74,6 +74,7 @@ func (u *UserRepository) Update(user *User, tx db.ITx) (*User, error) {
 			params = append(params, user.Name)
 		}
 
+		// origUser 에서 nil pointer dereference 나네
 		if user.AccessToken != nil && *origUser.AccessToken != *user.AccessToken {
 			buffer.WriteString(", oauth_access_token = ?")
 			params = append(params, *user.AccessToken)
