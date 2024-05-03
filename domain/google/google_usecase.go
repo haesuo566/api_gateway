@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 
 	"github.com/novel/auth/entity/user"
 	"golang.org/x/oauth2"
@@ -64,12 +63,9 @@ func (g *GoogleUsecase) GetUserInfo(token *oauth2.Token) (*user.User, error) {
 	}
 
 	user := &user.User{
-		Name:         googleUserInfo.Name,
-		Email:        googleUserInfo.Email,
-		AccessToken:  &token.AccessToken,
-		RefreshToken: &token.RefreshToken,
-		UpdatedAt:    time.Now(),
-		Provider:     0,
+		Name:     googleUserInfo.Name,
+		Email:    googleUserInfo.Email,
+		Provider: 0,
 	}
 
 	saveUser, err := g.userRepository.Save(user)

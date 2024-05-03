@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"os"
@@ -50,35 +49,31 @@ func NewHandler(usecase IGoogleUsecase) *GoogleHandler {
 func (g *GoogleHandler) Login(c echo.Context) error {
 	state := GenerateToken(c)
 	url := googleConfig.AuthCodeURL(state)
-	if err := c.Redirect(http.StatusTemporaryRedirect, url); err != nil {
-		return err
-	}
-
-	return nil
+	return c.Redirect(http.StatusTemporaryRedirect, url)
 }
 
 func (g *GoogleHandler) Callback(c echo.Context) error {
 	state, err := c.Cookie("state")
 	if err != nil {
-		c.Redirect(http.StatusBadRequest, "/")
+		c.Redirect(http.StatusBadRequest, "/google/login")
 		return err
 	}
 
 	if c.FormValue("state") != state.Value {
-		c.Redirect(http.StatusBadRequest, "/")
+		c.Redirect(http.StatusBadRequest, "/google/login")
 		return errors.New("")
 	}
 
 	code := c.FormValue("code")
 	token, err := googleConfig.Exchange(context.Background(), code)
 	if err != nil {
-		c.Redirect(http.StatusBadRequest, "/")
+		c.Redirect(http.StatusBadRequest, "/google/login")
 		return err
 	}
 
 	user, err := g.usecase.GetUserInfo(token)
 	if err != nil {
-		c.Redirect(http.StatusBadRequest, "/")
+		c.Redirect(http.StatusBadRequest, "/google/login")
 		return err
 	}
 
@@ -87,14 +82,7 @@ func (g *GoogleHandler) Callback(c echo.Context) error {
 		return err
 	}
 
-	data, err := json.Marshal(responseToken)
-	if err != nil {
-		c.Redirect(http.StatusBadRequest, "/")
-		return err
-	}
-
-	c.JSON(http.StatusOK, data)
-	return nil
+	return c.JSON(http.StatusOK, responseToken)
 }
 
 func GenerateToken(c echo.Context) string {

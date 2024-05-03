@@ -30,8 +30,7 @@ func NewRepository(db db.IDatabase) IUserRepository {
 }
 
 func (u *UserRepository) FindByEmail(email string, tx db.ITx) (*User, error) {
-	query := `SELECT id, name, email, credential, oauth_access_token, oauth_refresh_token, created_at, updated_at, provider 
-	FROM user WHERE email = ?`
+	query := `SELECT id, name, email, credential, created_at, updated_at, provider FROM user WHERE email = ?`
 	var row *sql.Row
 	if tx == nil {
 		row = u.db.QueryRowContext(context.Background(), query, email)
@@ -44,8 +43,8 @@ func (u *UserRepository) FindByEmail(email string, tx db.ITx) (*User, error) {
 	}
 
 	user := User{}
-	if err := row.Scan(&user.Id, &user.Name, &user.Email, &user.Credential, &user.AccessToken,
-		&user.RefreshToken, &user.CreatedAt, &user.UpdatedAt, &user.Provider); err != nil {
+	if err := row.Scan(&user.Id, &user.Name, &user.Email, &user.Credential,
+		&user.CreatedAt, &user.UpdatedAt, &user.Provider); err != nil {
 		return nil, err
 	}
 
@@ -54,14 +53,14 @@ func (u *UserRepository) FindByEmail(email string, tx db.ITx) (*User, error) {
 
 func (u *UserRepository) Update(user *User, tx db.ITx) (*User, error) {
 	updateFunc := func(tx db.ITx) (interface{}, error) {
-		selectQuery := `SELECT name, oauth_access_token, oauth_refresh_token, updated_at FROM user WHERE email = ?`
+		selectQuery := `SELECT name, updated_at FROM user WHERE email = ?`
 		row := tx.QueryRowContext(context.Background(), selectQuery, user.Email)
 		if err := row.Err(); err != nil {
 			return nil, err
 		}
 
 		origUser := User{}
-		if err := row.Scan(&origUser.Name, &origUser.AccessToken, &origUser.RefreshToken, &origUser.UpdatedAt); err != nil {
+		if err := row.Scan(&origUser.Name, &origUser.UpdatedAt); err != nil {
 			return nil, err
 		}
 
@@ -72,17 +71,6 @@ func (u *UserRepository) Update(user *User, tx db.ITx) (*User, error) {
 		if origUser.Name != user.Name {
 			buffer.WriteString(", name = ?")
 			params = append(params, user.Name)
-		}
-
-		// origUser 에서 nil pointer dereference 나네
-		if user.AccessToken != nil && *origUser.AccessToken != *user.AccessToken {
-			buffer.WriteString(", oauth_access_token = ?")
-			params = append(params, *user.AccessToken)
-		}
-
-		if user.RefreshToken != nil && *origUser.RefreshToken != *user.RefreshToken {
-			buffer.WriteString(", oauth_refresh_token = ?")
-			params = append(params, *user.RefreshToken)
 		}
 
 		buffer.WriteString(" WHERE email = ?")
@@ -123,8 +111,8 @@ func (u *UserRepository) Save(user *User) (*User, error) {
 		query = "INSERT INTO user(name, email, credential, provider) VALUES(?, ?, ?, ?)"
 		params = []interface{}{user.Name, user.Email, *user.Credential, user.Provider}
 	} else {
-		query = "INSERT INTO user(name, email, oauth_access_token, oauth_refresh_token, provider) VALUES(?, ?, ?, ?, ?, ?)"
-		params = []interface{}{user.Name, user.Email, *user.AccessToken, *user.RefreshToken, user.Provider}
+		query = "INSERT INTO user(name, email, provider) VALUES(?, ?, ?)"
+		params = []interface{}{user.Name, user.Email, user.Provider}
 	}
 
 	newUser, err := db.WithTx(u.db, func(tx db.ITx) (interface{}, error) {

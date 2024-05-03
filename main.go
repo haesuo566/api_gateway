@@ -2,8 +2,10 @@ package main
 
 import (
 	"net/http"
+	"os"
 
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/novel/auth/router"
 )
 
@@ -29,30 +31,17 @@ func main() {
 		c.JSON(http.StatusInternalServerError, "Internal Server Error")
 	}
 
+	customLogger := middleware.LoggerConfig{
+		Output: os.Stdout,
+		Format: `{"time":"${time_rfc3339_nano}","method":"${method}","uri":"${uri}","status":${status},"latency_human":"${latency_human}"}'` + "\n",
+	}
+
 	e.Use(
-	// middleware.Logger(),
-	// middleware.Recover(),
+		middleware.LoggerWithConfig(customLogger),
+		// middleware.Recover(), // recover는 production 환경에서 하는게 좋을 듯 함
 	)
 
 	router.SetRouter(e)
 
 	e.Logger.Fatal(e.Start(":12121"))
-	// e.Group("/asd", )
-	// app := middleware.New()
-
-	// // Handlers
-	// googleAuthHandler := google.NewHandler()
-	// naverAuthHandler := naver.NewHandler()
-
-	// // google auth
-	// app.Get("/auth/google", googleAuthHandler.Signin)
-	// app.Get("/auth/google/callback", googleAuthHandler.Callback)
-
-	// // naver auth
-	// app.Get("/auth/naver", naverAuthHandler.Signin)
-	// app.Get("/auth/naver/callback", naverAuthHandler.Callback)
-
-	// if err := app.Run(":12121"); err != nil {
-	// 	log.Println(err)
-	// }
 }
