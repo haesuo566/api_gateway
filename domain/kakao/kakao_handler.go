@@ -1,4 +1,4 @@
-package google
+package kakao
 
 import (
 	"context"
@@ -15,65 +15,64 @@ import (
 	"golang.org/x/oauth2"
 )
 
-type GoogleHandler struct {
-	usecase IGoogleUsecase
+type KakaoHandler struct {
+	usecase IKakaoUsecase
 }
 
-var googleConfig oauth2.Config
+var naverConfig oauth2.Config
 
 func init() {
 	config.LoadEnv()
-	googleConfig = oauth2.Config{
-		ClientID:     os.Getenv("GOOGLE_ID"),
-		ClientSecret: os.Getenv("GOOGLE_SECRET"),
-		RedirectURL:  "http://localhost:12121/google/callback",
-		Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email"},
+	naverConfig = oauth2.Config{
+		ClientID:     os.Getenv("KAKAO_ID"),
+		ClientSecret: os.Getenv("KAKAO_SECRET"),
+		RedirectURL:  "http://localhost:12121/kakao/callback",
 		Endpoint: oauth2.Endpoint{
-			AuthURL:  "https://accounts.google.com/o/oauth2/auth",
-			TokenURL: "https://oauth2.googleapis.com/token",
+			AuthURL:  "https://kauth.kakao.com/oauth/authorize",
+			TokenURL: "https://kauth.kakao.com/oauth/token",
 		},
 	}
 }
 
-var handlerInstance *GoogleHandler = nil
+var handlerInstance *KakaoHandler = nil
 
-func NewHandler(usecase IGoogleUsecase) *GoogleHandler {
+func NewHandler(usecase IKakaoUsecase) *KakaoHandler {
 	if handlerInstance == nil {
-		handlerInstance = &GoogleHandler{
+		handlerInstance = &KakaoHandler{
 			usecase: usecase,
 		}
 	}
 	return handlerInstance
 }
 
-func (g *GoogleHandler) Login(c echo.Context) error {
+func (g *KakaoHandler) Login(c echo.Context) error {
 	state := GenerateToken(c)
-	url := googleConfig.AuthCodeURL(state)
+	url := naverConfig.AuthCodeURL(state)
 	return c.Redirect(http.StatusTemporaryRedirect, url)
 }
 
-func (g *GoogleHandler) Callback(c echo.Context) error {
+func (g *KakaoHandler) Callback(c echo.Context) error {
 	state, err := c.Cookie("state")
 	if err != nil {
-		c.Redirect(http.StatusBadRequest, "/google/login")
+		c.Redirect(http.StatusBadRequest, "/kakao/login")
 		return err
 	}
 
 	if c.FormValue("state") != state.Value {
-		c.Redirect(http.StatusBadRequest, "/google/login")
+		c.Redirect(http.StatusBadRequest, "/kakao/login")
 		return errors.New("")
 	}
 
 	code := c.FormValue("code")
-	token, err := googleConfig.Exchange(context.Background(), code)
+	token, err := naverConfig.Exchange(context.Background(), code)
 	if err != nil {
-		c.Redirect(http.StatusBadRequest, "/google/login")
+		c.Redirect(http.StatusBadRequest, "/kakao/login")
 		return err
 	}
 
 	user, err := g.usecase.GetUserInfo(token)
 	if err != nil {
-		c.Redirect(http.StatusBadRequest, "/google/login")
+		c.Redirect(http.StatusBadRequest, "/kakao/login")
 		return err
 	}
 
