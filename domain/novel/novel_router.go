@@ -1,4 +1,4 @@
-package naver
+package novel
 
 import (
 	"github.com/labstack/echo/v4"
@@ -13,7 +13,7 @@ func SetRouter(e *echo.Echo) {
 	usecase := newUsecase(userRepository)
 	handler := newHandler(usecase)
 
-	group := e.Group("/naver")
+	group := e.Group("/novel")
 	group.GET("/login", handler.login)
-	group.GET("/callback", handler.callback)
+	group.GET("/signup", handler.signup)
 }

@@ -15,8 +15,8 @@ import (
 	"golang.org/x/oauth2"
 )
 
-type NaverHandler struct {
-	usecase INaverUsecase
+type naverHandler struct {
+	usecase iNaverUsecase
 }
 
 var naverConfig oauth2.Config
@@ -35,24 +35,24 @@ func init() {
 	}
 }
 
-var handlerInstance *NaverHandler = nil
+var handlerInstance *naverHandler = nil
 
-func NewHandler(usecase INaverUsecase) *NaverHandler {
+func newHandler(usecase iNaverUsecase) *naverHandler {
 	if handlerInstance == nil {
-		handlerInstance = &NaverHandler{
+		handlerInstance = &naverHandler{
 			usecase: usecase,
 		}
 	}
 	return handlerInstance
 }
 
-func (g *NaverHandler) Login(c echo.Context) error {
+func (g *naverHandler) login(c echo.Context) error {
 	state := GenerateToken(c)
 	url := naverConfig.AuthCodeURL(state)
 	return c.Redirect(http.StatusTemporaryRedirect, url)
 }
 
-func (g *NaverHandler) Callback(c echo.Context) error {
+func (g *naverHandler) callback(c echo.Context) error {
 	state, err := c.Cookie("state")
 	if err != nil {
 		c.Redirect(http.StatusBadRequest, "/naver/login")
@@ -71,7 +71,7 @@ func (g *NaverHandler) Callback(c echo.Context) error {
 		return err
 	}
 
-	user, err := g.usecase.GetUserInfo(token)
+	user, err := g.usecase.getUserInfo(token)
 	if err != nil {
 		c.Redirect(http.StatusBadRequest, "/naver/login")
 		return err

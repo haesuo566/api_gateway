@@ -9,11 +9,11 @@ import (
 	"golang.org/x/oauth2"
 )
 
-type INaverUsecase interface {
-	GetUserInfo(*oauth2.Token) (*user.User, error)
+type iNaverUsecase interface {
+	getUserInfo(*oauth2.Token) (*user.User, error)
 }
 
-type NaverUsecase struct {
+type naverUsecase struct {
 	userRepository user.IUserRepository
 }
 
@@ -27,11 +27,11 @@ type NaverUserInfo struct {
 	} `json:"response"`
 }
 
-var usecaseInstance INaverUsecase = nil
+var usecaseInstance iNaverUsecase = nil
 
-func NewUsecase(userRepository user.IUserRepository) INaverUsecase {
+func newUsecase(userRepository user.IUserRepository) iNaverUsecase {
 	if usecaseInstance == nil {
-		usecaseInstance = &NaverUsecase{
+		usecaseInstance = &naverUsecase{
 			userRepository: userRepository,
 		}
 	}
@@ -39,7 +39,7 @@ func NewUsecase(userRepository user.IUserRepository) INaverUsecase {
 }
 
 // 로그인하면 updated_at column 업데이트 하는 부분 추가
-func (g *NaverUsecase) GetUserInfo(token *oauth2.Token) (*user.User, error) {
+func (g *naverUsecase) getUserInfo(token *oauth2.Token) (*user.User, error) {
 	// User Information Url
 	request, err := http.NewRequest("GET", "https://openapi.naver.com/v1/nid/me", nil)
 	if err != nil {
