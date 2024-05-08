@@ -13,7 +13,7 @@ func SetRouter(e *echo.Echo) {
 	usecase := newUsecase(userRepository)
 	handler := newHandler(usecase)
 
-	group := e.Group("/novel")
-	group.GET("/login", handler.login)
-	group.GET("/signup", handler.signup)
+	group := e.Group("/auth/novel")
+	group.POST("/login", handler.login)
+	group.POST("/signup", handler.signup)
 }
