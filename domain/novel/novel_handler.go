@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"regexp"
 
-	"github.com/labstack/echo/v4"
+	"github.com/gofiber/fiber/v2"
 	"github.com/novel/auth/util/jwt"
 )
 
@@ -25,9 +25,9 @@ func newHandler(usecase iNovelUsecase) *novelHandler {
 	return handlerInstance
 }
 
-func (n *novelHandler) login(c echo.Context) error {
-	email := c.FormValue("email")
-	password := c.FormValue("password")
+func (n *novelHandler) Login(ctx *fiber.Ctx) error {
+	email := ctx.FormValue("email")
+	password := ctx.FormValue("password")
 
 	// login process
 	user, err := n.usecase.login(email, password)
@@ -41,17 +41,17 @@ func (n *novelHandler) login(c echo.Context) error {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, responseToken)
+	return ctx.JSON(responseToken)
 }
 
-func (n *novelHandler) logout() {
-
+func (n *novelHandler) Logout(ctx *fiber.Ctx) error {
+	return nil
 }
 
-func (n *novelHandler) signup(c echo.Context) error {
-	username := c.FormValue("username")
-	email := c.FormValue("email")
-	password := c.FormValue("password")
+func (n *novelHandler) Signup(ctx *fiber.Ctx) error {
+	username := ctx.FormValue("username")
+	email := ctx.FormValue("email")
+	password := ctx.FormValue("password")
 
 	if len(username) > 16 || len(username) <= 0 {
 		return errors.New("username length is incorrect")
@@ -79,5 +79,5 @@ func (n *novelHandler) signup(c echo.Context) error {
 		return err
 	}
 
-	return c.Redirect(http.StatusTemporaryRedirect, "/auth/novel/login")
+	return ctx.Redirect("/auth/novel/login", http.StatusTemporaryRedirect)
 }

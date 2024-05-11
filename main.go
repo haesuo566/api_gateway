@@ -1,11 +1,8 @@
 package main
 
 import (
-	"net/http"
-	"os"
-
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/novel/auth/router"
 )
 
@@ -16,28 +13,16 @@ import (
 3. redis, kafka도 해봐야하는데 redis는 나중에 다시 해보고 mas로 만들거니까 kafka 먼저 해보는게 좋을 것 같음
 4. 나중에 grpc로 migration 해보는 것도 좋은데 이건 많이 나중에
 5. logout(나중에 구현) 은 redis 로 처리합시다. 나중에 캐시데이터도 redis 에 넣는걸로
+6. 지금부터 erd 구상해서 실제 db 테이블 만들어서 가버리자고 (jwt, oauth 보안 블로그 -> https://puleugo.tistory.com/139)
 */
 
 // '/' 경로는 Api Gateway 추가예정
 func main() {
-	e := echo.New()
+	app := fiber.New()
 
-	e.HTTPErrorHandler = func(err error, c echo.Context) {
-		e.Logger.Error(err)
-		c.JSON(http.StatusInternalServerError, "Internal Server Error")
-	}
+	app.Use(logger.New())
 
-	customLogger := middleware.LoggerConfig{
-		Output: os.Stdout,
-		Format: `{"time":"${time_rfc3339_nano}","method":"${method}","uri":"${uri}","status":${status},"latency_human":"${latency_human}"}'` + "\n",
-	}
+	router.SetRouter(app)
 
-	e.Use(
-		middleware.LoggerWithConfig(customLogger),
-		// middleware.Recover(), // recover는 production 환경에서 하는게 좋을 듯 함
-	)
-
-	router.SetRouter(e)
-
-	e.Logger.Fatal(e.Start(":12121"))
+	app.Listen(":12121")
 }

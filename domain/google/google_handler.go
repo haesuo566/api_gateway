@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/labstack/echo/v4"
+	"github.com/gofiber/fiber/v2"
 	"github.com/novel/auth/config"
 	"github.com/novel/auth/util/jwt"
 	"golang.org/x/oauth2"
@@ -26,7 +26,7 @@ func init() {
 	googleConfig = oauth2.Config{
 		ClientID:     os.Getenv("GOOGLE_ID"),
 		ClientSecret: os.Getenv("GOOGLE_SECRET"),
-		RedirectURL:  "http://localhost:12121/google/callback",
+		RedirectURL:  "http://localhost:12121/auth/google/callback",
 		Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email"},
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  "https://accounts.google.com/o/oauth2/auth",
@@ -46,34 +46,29 @@ func NewHandler(usecase IGoogleUsecase) *GoogleHandler {
 	return handlerInstance
 }
 
-func (g *GoogleHandler) Login(c echo.Context) error {
-	state := GenerateToken(c)
+func (g *GoogleHandler) Login(ctx *fiber.Ctx) error {
+	state := GenerateToken(ctx)
 	url := googleConfig.AuthCodeURL(state)
-	return c.Redirect(http.StatusTemporaryRedirect, url)
+	return ctx.Redirect(url, http.StatusTemporaryRedirect)
 }
 
-func (g *GoogleHandler) Callback(c echo.Context) error {
-	state, err := c.Cookie("state")
-	if err != nil {
-		c.Redirect(http.StatusBadRequest, "/google/login")
-		return err
-	}
-
-	if c.FormValue("state") != state.Value {
-		c.Redirect(http.StatusBadRequest, "/google/login")
+func (g *GoogleHandler) Callback(ctx *fiber.Ctx) error {
+	state := ctx.Cookies("state")
+	if ctx.FormValue("state") != state {
+		ctx.Redirect("/google/login", http.StatusBadRequest)
 		return errors.New("")
 	}
 
-	code := c.FormValue("code")
+	code := ctx.FormValue("code")
 	token, err := googleConfig.Exchange(context.Background(), code)
 	if err != nil {
-		c.Redirect(http.StatusBadRequest, "/google/login")
+		ctx.Redirect("/google/login", http.StatusBadRequest)
 		return err
 	}
 
 	user, err := g.usecase.GetUserInfo(token)
 	if err != nil {
-		c.Redirect(http.StatusBadRequest, "/google/login")
+		ctx.Redirect("/google/login", http.StatusBadRequest)
 		return err
 	}
 
@@ -82,21 +77,18 @@ func (g *GoogleHandler) Callback(c echo.Context) error {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, responseToken)
+	return ctx.JSON(responseToken)
 }
 
-func GenerateToken(c echo.Context) string {
-	expires := time.Now().Add(time.Hour * 24)
-
+func GenerateToken(ctx *fiber.Ctx) string {
 	data := make([]byte, 16)
 	rand.Read(data)
 	csrfToken := base64.URLEncoding.EncodeToString(data)
 
-	cookie := &http.Cookie{}
-	cookie.Name = "state"
-	cookie.Value = csrfToken
-	cookie.Expires = expires
-
-	c.SetCookie(cookie)
+	ctx.Cookie(&fiber.Cookie{
+		Name:    "state",
+		Value:   csrfToken,
+		Expires: time.Now().Add(time.Hour * 24),
+	})
 	return csrfToken
 }

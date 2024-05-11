@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/labstack/echo/v4"
+	"github.com/gofiber/fiber/v2"
 	"github.com/novel/auth/config"
 	"github.com/novel/auth/util/jwt"
 	"golang.org/x/oauth2"
@@ -26,7 +26,7 @@ func init() {
 	naverConfig = oauth2.Config{
 		ClientID:     os.Getenv("NAVER_ID"),
 		ClientSecret: os.Getenv("NAVER_SECRET"),
-		RedirectURL:  "http://localhost:12121/naver/callback",
+		RedirectURL:  "http://localhost:12121/auth/naver/callback",
 		Scopes:       []string{"https://openapi.naver.com/v1/nid/me"},
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  "https://nid.naver.com/oauth2.0/authorize",
@@ -46,34 +46,29 @@ func newHandler(usecase iNaverUsecase) *naverHandler {
 	return handlerInstance
 }
 
-func (g *naverHandler) login(c echo.Context) error {
-	state := GenerateToken(c)
+func (g *naverHandler) Login(ctx *fiber.Ctx) error {
+	state := GenerateToken(ctx)
 	url := naverConfig.AuthCodeURL(state)
-	return c.Redirect(http.StatusTemporaryRedirect, url)
+	return ctx.Redirect(url, http.StatusTemporaryRedirect)
 }
 
-func (g *naverHandler) callback(c echo.Context) error {
-	state, err := c.Cookie("state")
-	if err != nil {
-		c.Redirect(http.StatusBadRequest, "/naver/login")
-		return err
+func (g *naverHandler) Callback(ctx *fiber.Ctx) error {
+	state := ctx.Cookies("state")
+	if ctx.FormValue("state") != state {
+		ctx.Redirect("/naver/login", http.StatusBadRequest)
+		return errors.New("state is not equals")
 	}
 
-	if c.FormValue("state") != state.Value {
-		c.Redirect(http.StatusBadRequest, "/naver/login")
-		return errors.New("")
-	}
-
-	code := c.FormValue("code")
+	code := ctx.FormValue("code")
 	token, err := naverConfig.Exchange(context.Background(), code)
 	if err != nil {
-		c.Redirect(http.StatusBadRequest, "/naver/login")
+		ctx.Redirect("/naver/login", http.StatusBadRequest)
 		return err
 	}
 
 	user, err := g.usecase.getUserInfo(token)
 	if err != nil {
-		c.Redirect(http.StatusBadRequest, "/naver/login")
+		ctx.Redirect("/naver/login", http.StatusBadRequest)
 		return err
 	}
 
@@ -82,21 +77,18 @@ func (g *naverHandler) callback(c echo.Context) error {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, responseToken)
+	return ctx.JSON(responseToken)
 }
 
-func GenerateToken(c echo.Context) string {
-	expires := time.Now().Add(time.Hour * 24)
-
+func GenerateToken(ctx *fiber.Ctx) string {
 	data := make([]byte, 16)
 	rand.Read(data)
 	csrfToken := base64.URLEncoding.EncodeToString(data)
 
-	cookie := &http.Cookie{}
-	cookie.Name = "state"
-	cookie.Value = csrfToken
-	cookie.Expires = expires
-
-	c.SetCookie(cookie)
+	ctx.Cookie(&fiber.Cookie{
+		Name:    "state",
+		Value:   csrfToken,
+		Expires: time.Now().Add(time.Hour * 24),
+	})
 	return csrfToken
 }
