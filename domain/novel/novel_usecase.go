@@ -38,7 +38,10 @@ func (n *novelUsecase) login(email, password string) (*user.User, error) {
 		return nil, err
 	}
 
-	user, err := n.userRepository.FindByEmail(email, nil)
+	user, err := n.userRepository.FindByEmailAndProvider(&user.User{
+		Email:    email,
+		Provider: user.NOVEL,
+	}, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +63,7 @@ func (n *novelUsecase) singup(username, email, password string) error {
 		Name:       username,
 		Email:      email,
 		Credential: &hashedPassword,
-		Provider:   1,
+		Provider:   user.NOVEL,
 	}
 
 	if _, err := n.userRepository.Save(user); err != nil {

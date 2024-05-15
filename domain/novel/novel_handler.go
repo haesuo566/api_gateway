@@ -2,6 +2,7 @@ package novel
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"regexp"
 
@@ -66,7 +67,7 @@ func (n *novelHandler) Signup(ctx *fiber.Ctx) error {
 	}
 
 	// 비밀번호 체크는 나중에 생각나면 다시하자고
-	emailRegex, err := regexp.Compile(`[a-zA-Z0-9]+@[a-zA-Z0-9]+((\\.[a-zA-Z0-9]+){1,5})`)
+	emailRegex, err := regexp.Compile(`[a-zA-Z0-9]+@[a-zA-Z0-9]+((\.[a-zA-Z0-9]+){1,5})`)
 	if err != nil {
 		return err
 	}
@@ -79,5 +80,6 @@ func (n *novelHandler) Signup(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	return ctx.Redirect("/auth/novel/login", http.StatusTemporaryRedirect)
+	url := fmt.Sprintf("/auth/novel/login?email=%s&password=%s", email, password)
+	return ctx.Redirect(url, http.StatusPermanentRedirect)
 }

@@ -4,7 +4,7 @@ create table novel_user (
 	credential varchar(128) comment '비밀번호',
 	name varchar(16) not null comment '이름',
 	created_at timestamp not null default NOW() comment '생성날짜',
-	udpated_at timestamp not null default NOW() comment '최근접속 날짜',
+	updated_at timestamp not null default NOW() comment '최근접속 날짜',
 	provider varchar(16) not null comment '로그인 플랫폼',
 	primary key (id),
 	unique key (email, provider)
@@ -54,4 +54,21 @@ create table novel_comment (
 	foreign key(novel_content_id) references novel_content(id),
 	foreign key(novel_user_id) references novel_user(id),
 	foreign key(comment_id) references novel_comment(id)
+);
+
+create table notification (
+	id int auto_increment,
+	novel_id int not null,
+	title varchar(255) not null,
+	created_at timestamp not null,
+	primary key (id),
+	foreign key (novel_id) references novel(id)
+);
+
+create table notification_content (
+	id int auto_increment,
+	notification_id int not null,
+	content text not null,
+	primary key (id),
+	foreign key (notification_id) references notification(id)
 );

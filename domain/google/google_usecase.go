@@ -65,7 +65,7 @@ func (g *GoogleUsecase) GetUserInfo(token *oauth2.Token) (*user.User, error) {
 	user := &user.User{
 		Name:     googleUserInfo.Name,
 		Email:    googleUserInfo.Email,
-		Provider: 0,
+		Provider: user.GOOGLE,
 	}
 
 	saveUser, err := g.userRepository.Save(user)

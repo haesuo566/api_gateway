@@ -21,6 +21,7 @@ func main() {
 	app := fiber.New()
 
 	app.Use(logger.New())
+	// app.Use(recover.New())
 
 	router.SetRouter(app)
 

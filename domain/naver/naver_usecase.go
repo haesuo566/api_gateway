@@ -67,7 +67,7 @@ func (g *naverUsecase) getUserInfo(token *oauth2.Token) (*user.User, error) {
 	user := &user.User{
 		Name:     naverUserInfo.Response.Name,
 		Email:    naverUserInfo.Response.Email,
-		Provider: 0,
+		Provider: user.NAVER,
 	}
 
 	saveUser, err := g.userRepository.Save(user)

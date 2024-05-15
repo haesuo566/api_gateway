@@ -18,7 +18,7 @@ func TestSave(t *testing.T) {
 		Credential: &credential,
 		CreatedAt:  time.Now(),
 		UpdatedAt:  time.Now(),
-		Provider:   0,
+		Provider:   GOOGLE,
 	}
 
 	if _, err := repository.Save(user); err != nil {
@@ -45,7 +45,11 @@ func TestFindByEmail(t *testing.T) {
 	db := db.New()
 	repository := NewRepository(db)
 
-	if _, err := repository.FindByEmail("haesuo566@gmail.com", nil); err != nil {
+	user := &User{
+		Email:    "haesuo566@gmail.com",
+		Provider: GOOGLE,
+	}
+	if _, err := repository.FindByEmailAndProvider(user, nil); err != nil {
 		t.Error(err)
 	}
 }
