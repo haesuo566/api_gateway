@@ -1,4 +1,4 @@
-module github.com/novel/auth
+module github.com/novel/api-gateway
 
 go 1.21.5
 

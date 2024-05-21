@@ -2,8 +2,8 @@ package google
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/novel/auth/db"
-	"github.com/novel/auth/entity/user"
+	"github.com/novel/api-gateway/db"
+	"github.com/novel/api-gateway/entity/user"
 )
 
 func SetRouter(app *fiber.App) {

@@ -7,7 +7,7 @@ import (
 	"os"
 
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/novel/auth/config"
+	"github.com/novel/api-gateway/config"
 )
 
 type ITx interface {

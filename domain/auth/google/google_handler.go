@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/novel/auth/config"
-	"github.com/novel/auth/util/jwt"
+	"github.com/novel/api-gateway/config"
+	"github.com/novel/api-gateway/util/jwt"
 	"golang.org/x/oauth2"
 )
 

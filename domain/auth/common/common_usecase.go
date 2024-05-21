@@ -1,4 +1,4 @@
-package novel
+package common
 
 import (
 	"crypto/sha256"
@@ -7,24 +7,24 @@ import (
 	"os"
 	"strings"
 
-	"github.com/novel/auth/config"
-	"github.com/novel/auth/entity/user"
+	"github.com/novel/api-gateway/config"
+	"github.com/novel/api-gateway/entity/user"
 )
 
-type iNovelUsecase interface {
+type iCommonUsecase interface {
 	login(string, string) (*user.User, error)
 	singup(string, string, string) error
 }
 
-type novelUsecase struct {
+type commonUsecase struct {
 	userRepository user.IUserRepository
 }
 
-var usecaseInstance iNovelUsecase = nil
+var usecaseInstance iCommonUsecase = nil
 
-func newUsecase(userRepository user.IUserRepository) iNovelUsecase {
+func newUsecase(userRepository user.IUserRepository) iCommonUsecase {
 	if usecaseInstance == nil {
-		usecaseInstance = &novelUsecase{
+		usecaseInstance = &commonUsecase{
 			userRepository: userRepository,
 		}
 	}
@@ -32,7 +32,7 @@ func newUsecase(userRepository user.IUserRepository) iNovelUsecase {
 	return usecaseInstance
 }
 
-func (n *novelUsecase) login(email, password string) (*user.User, error) {
+func (n *commonUsecase) login(email, password string) (*user.User, error) {
 	hashedPassword, err := hashString(password)
 	if err != nil {
 		return nil, err
@@ -53,7 +53,7 @@ func (n *novelUsecase) login(email, password string) (*user.User, error) {
 	return user, nil
 }
 
-func (n *novelUsecase) singup(username, email, password string) error {
+func (n *commonUsecase) singup(username, email, password string) error {
 	hashedPassword, err := hashString(password)
 	if err != nil {
 		return err

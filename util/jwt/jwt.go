@@ -1,12 +1,13 @@
 package jwt
 
 import (
+	"errors"
 	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt"
-	"github.com/novel/auth/config"
-	"github.com/novel/auth/entity/user"
+	"github.com/novel/api-gateway/config"
+	"github.com/novel/api-gateway/entity/user"
 )
 
 type ResponseToken struct {
@@ -14,13 +15,20 @@ type ResponseToken struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
+var secret string
+
+func init() {
+	config.LoadEnv()
+	secret = os.Getenv("JWT_SECRET")
+}
+
 func GenerateResponseToken(user *user.User) (*ResponseToken, error) {
-	accessToken, err := GenerateToken(user)
+	accessToken, err := GenerateAccessToken()
 	if err != nil {
 		return nil, err
 	}
 
-	refreshToken, err := GenerateToken(nil)
+	refreshToken, err := GenerateRefreshToken()
 	if err != nil {
 		return nil, err
 	}
@@ -33,22 +41,39 @@ func GenerateResponseToken(user *user.User) (*ResponseToken, error) {
 	return responseToken, nil
 }
 
-func GenerateToken(user *user.User) (string, error) {
+func GenerateAccessToken() (string, error) {
 	claim := jwt.MapClaims{
 		"iat": time.Now(),
-	}
-
-	if user == nil {
-		claim["exp"] = time.Now().Add(time.Hour * 24 * 7)
-		claim["sub"] = "refresh_token"
-	} else {
-		claim["exp"] = time.Now().Add(time.Hour * 30)
-		claim["sub"] = "access_token"
-		claim["email"] = user.Email
+		"exp": time.Now().Add(time.Hour * 30),
+		"sub": "access_token",
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claim)
-	config.LoadEnv()
-	secret := os.Getenv("JWT_SECRET")
 	return token.SignedString([]byte(secret))
+}
+
+func GenerateRefreshToken() (string, error) {
+	claim := jwt.MapClaims{
+		"iat": time.Now(),
+		"exp": time.Now().Add(time.Hour * 24 * 7),
+		"sub": "refresh_token",
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claim)
+	return token.SignedString([]byte(secret))
+}
+
+func ValidateToken(token string) error {
+	_, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("token is invalidate")
+		}
+		return []byte(secret), nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

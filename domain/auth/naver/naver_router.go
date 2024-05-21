@@ -1,9 +1,9 @@
-package novel
+package naver
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/novel/auth/db"
-	"github.com/novel/auth/entity/user"
+	"github.com/novel/api-gateway/db"
+	"github.com/novel/api-gateway/entity/user"
 )
 
 func SetRouter(app *fiber.App) {
@@ -13,7 +13,7 @@ func SetRouter(app *fiber.App) {
 	usecase := newUsecase(userRepository)
 	handler := newHandler(usecase)
 
-	group := app.Group("/auth/novel")
-	group.Post("/login", handler.Login)
-	group.Post("/signup", handler.Signup)
+	group := app.Group("/auth/naver")
+	group.Get("/login", handler.Login)
+	group.Get("/callback", handler.Callback)
 }

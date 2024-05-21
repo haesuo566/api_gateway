@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
-	"github.com/novel/auth/config"
-	"github.com/novel/auth/util/jwt"
+	"github.com/novel/api-gateway/config"
+	"github.com/novel/api-gateway/util/jwt"
 	"golang.org/x/oauth2"
 )
 

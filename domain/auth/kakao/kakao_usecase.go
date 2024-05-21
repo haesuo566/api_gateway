@@ -5,7 +5,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/novel/auth/entity/user"
+	"github.com/novel/api-gateway/entity/user"
 	"golang.org/x/oauth2"
 )
 

@@ -1,4 +1,4 @@
-package novel
+package common
 
 import (
 	"errors"
@@ -7,18 +7,18 @@ import (
 	"regexp"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/novel/auth/util/jwt"
+	"github.com/novel/api-gateway/util/jwt"
 )
 
-type novelHandler struct {
-	usecase iNovelUsecase
+type commonHandler struct {
+	usecase iCommonUsecase
 }
 
-var handlerInstance *novelHandler = nil
+var handlerInstance *commonHandler = nil
 
-func newHandler(usecase iNovelUsecase) *novelHandler {
+func newHandler(usecase iCommonUsecase) *commonHandler {
 	if handlerInstance == nil {
-		handlerInstance = &novelHandler{
+		handlerInstance = &commonHandler{
 			usecase: usecase,
 		}
 	}
@@ -26,7 +26,7 @@ func newHandler(usecase iNovelUsecase) *novelHandler {
 	return handlerInstance
 }
 
-func (n *novelHandler) Login(ctx *fiber.Ctx) error {
+func (n *commonHandler) Login(ctx *fiber.Ctx) error {
 	email := ctx.FormValue("email")
 	password := ctx.FormValue("password")
 
@@ -45,11 +45,11 @@ func (n *novelHandler) Login(ctx *fiber.Ctx) error {
 	return ctx.JSON(responseToken)
 }
 
-func (n *novelHandler) Logout(ctx *fiber.Ctx) error {
+func (n *commonHandler) Logout(ctx *fiber.Ctx) error {
 	return nil
 }
 
-func (n *novelHandler) Signup(ctx *fiber.Ctx) error {
+func (n *commonHandler) Signup(ctx *fiber.Ctx) error {
 	username := ctx.FormValue("username")
 	email := ctx.FormValue("email")
 	password := ctx.FormValue("password")
@@ -80,6 +80,23 @@ func (n *novelHandler) Signup(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	url := fmt.Sprintf("/auth/novel/login?email=%s&password=%s", email, password)
-	return ctx.Redirect(url, http.StatusPermanentRedirect)
+	url := fmt.Sprintf("/auth/common/login?email=%s&password=%s", email, password)
+	return ctx.Redirect(url, http.StatusTemporaryRedirect)
+}
+
+func (n *commonHandler) RefreshToken(ctx *fiber.Ctx) error {
+	refreshToken := ctx.FormValue("refreshToken")
+
+	if err := jwt.ValidateToken(refreshToken); err != nil {
+		return err
+	}
+
+	accessToken, err := jwt.GenerateAccessToken()
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(fiber.Map{
+		"access_token": accessToken,
+	})
 }

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/novel/auth/db"
+	"github.com/novel/api-gateway/db"
 )
 
 func TestSave(t *testing.T) {

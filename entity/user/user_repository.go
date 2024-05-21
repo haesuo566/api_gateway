@@ -5,7 +5,7 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/novel/auth/db"
+	"github.com/novel/api-gateway/db"
 )
 
 type IUserRepository interface {
@@ -118,6 +118,11 @@ func (u *UserRepository) Save(user *User) (*User, error) {
 	newUser, err := db.WithTx(u.db, func(tx db.ITx) (interface{}, error) {
 		var userInfo *User
 		if _, err := u.FindByEmailAndProvider(user, tx); err != nil {
+			// 이미 가입된 계정이 있는지 확인
+			if _, err := u.FindByEmailAndProvider(user, tx); err != nil {
+				return nil, &DuplicatedUserError{user.Email}
+			}
+
 			result, err := tx.ExecContext(context.Background(), query, params...)
 			if err != nil {
 				return nil, err

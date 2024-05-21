@@ -2,8 +2,8 @@ package kakao
 
 import (
 	"github.com/labstack/echo/v4"
-	"github.com/novel/auth/db"
-	"github.com/novel/auth/entity/user"
+	"github.com/novel/api-gateway/db"
+	"github.com/novel/api-gateway/entity/user"
 )
 
 func SetRouter(e *echo.Echo) {

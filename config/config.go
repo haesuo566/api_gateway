@@ -7,7 +7,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-const projectDirName string = "novel_auth"
+const projectDirName string = "api_gateway"
 
 func LoadEnv() {
 	re := regexp.MustCompile(`^(.*` + projectDirName + `)`)
