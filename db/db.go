@@ -33,10 +33,18 @@ var (
 func New() IDatabase {
 	if instance == nil {
 		config.LoadEnv()
-		format := "%s:%s@tcp(%s:%s)/auth?parseTime=True"
+		format := "%s:%s@tcp(%s:%s)/novel?parseTime=True"
 		url := fmt.Sprintf(format, os.Getenv("DB_USER"), os.Getenv("DB_PASS"), os.Getenv("DB_HOST"), os.Getenv("DB_PORT"))
 		db, err := sql.Open("mysql", url)
 		if err != nil {
+			panic(err)
+		}
+
+		if db == nil {
+			panic("db instance is nil")
+		}
+
+		if err := db.Ping(); err != nil {
 			panic(err)
 		}
 
