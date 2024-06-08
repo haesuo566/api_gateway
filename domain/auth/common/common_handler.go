@@ -45,6 +45,7 @@ func (n *commonHandler) Login(ctx *fiber.Ctx) error {
 	return ctx.JSON(responseToken)
 }
 
+// redis 에서 logout 처리
 func (n *commonHandler) Logout(ctx *fiber.Ctx) error {
 	return nil
 }

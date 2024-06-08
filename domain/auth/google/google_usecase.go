@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
+	"github.com/google/uuid"
 	"github.com/novel/api-gateway/entity/user"
 	"golang.org/x/oauth2"
 )
@@ -63,7 +65,7 @@ func (g *GoogleUsecase) GetUserInfo(token *oauth2.Token) (*user.User, error) {
 	}
 
 	user := &user.User{
-		Name:     googleUserInfo.Name,
+		Name:     strings.Replace(uuid.New().String(), "-", "", -1),
 		Email:    googleUserInfo.Email,
 		Provider: user.GOOGLE,
 	}

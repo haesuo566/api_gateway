@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strings"
 
+	"github.com/google/uuid"
 	"github.com/novel/api-gateway/entity/user"
 	"golang.org/x/oauth2"
 )
@@ -64,8 +66,9 @@ func (g *naverUsecase) getUserInfo(token *oauth2.Token) (*user.User, error) {
 		return nil, err
 	}
 
+	// 이름 랜덤 name validation 추가해야할 듯???
 	user := &user.User{
-		Name:     naverUserInfo.Response.Name,
+		Name:     strings.Replace(uuid.New().String(), "-", "", -1), // replace - 해야함
 		Email:    naverUserInfo.Response.Email,
 		Provider: user.NAVER,
 	}
