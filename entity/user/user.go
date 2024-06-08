@@ -1,6 +1,8 @@
 package user
 
 import (
+	"crypto/sha256"
+	"fmt"
 	"time"
 )
 
@@ -21,4 +23,17 @@ type User struct {
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
 	Provider   string    `json:"provider"`
+}
+
+func (user *User) HashCode() string {
+	var credential string = ""
+	if user.Credential != nil {
+		credential = *user.Credential
+	}
+
+	hashString := fmt.Sprintf("%s|%s|%s|%s", user.Name, credential, user.Email, user.Provider)
+	hash := sha256.New()
+	hash.Write([]byte(hashString))
+
+	return string(hash.Sum(nil))
 }
