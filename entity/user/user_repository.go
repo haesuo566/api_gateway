@@ -60,10 +60,8 @@ func (u *UserRepository) FindByEmailAndProvider(user *User, tx db.ITx) (*User, e
 	return &selectedUser, nil
 }
 
-// update 가능한 컬럼은 다 업데이트 하는 걸로 해야겠는데?
 // user 정보를 업데이트 할때는 이 function을 사용하고
 // 로그인할때만 save function을 사용함
-// 이거는 개선의 여지가 많음
 func (u *UserRepository) Update(user *User, tx db.ITx) (*User, error) {
 	updateFunc := func(tx db.ITx) (interface{}, error) {
 		selectQuery := `SELECT name, email, credential, provider FROM novel_user WHERE email = ? and provider = ?`
